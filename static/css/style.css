@@ -1,0 +1,90 @@
+/* Custom styles for Stratos Email Notifier */
+
+body {
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-size: 1.5rem;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+#account-teams-list ul {
+    margin-bottom: 0.5rem;
+}
+
+#account-teams-list li {
+    margin-bottom: 0.25rem;
+}
+
+.badge {
+    font-size: 0.8em;
+}
+
+#recipients-preview {
+    min-height: 60px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.alert {
+    margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+    
+    .navbar-brand {
+        font-size: 1.2rem;
+    }
+}
+
+/* Form styling */
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* Status message animations */
+.alert {
+    animation: slideInDown 0.3s ease-out;
+}
+
+@keyframes slideInDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
