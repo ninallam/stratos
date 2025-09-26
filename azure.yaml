@@ -1,0 +1,22 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: stratos
+metadata:
+  template: stratos@0.0.1-beta
+services:
+  web:
+    project: .
+    language: python
+    host: containerapp
+    env:
+      - KUSTO_CLUSTER
+      - KUSTO_DATABASE
+      - LOGIC_APP_URL
+      - SECRET_KEY
+      - DEMO_MODE
+hooks:
+  postdeploy:
+    shell: sh
+    run: echo "Deployment complete! Don't forget to configure your Kusto cluster and Logic App URLs in the environment variables."
+    continueOnError: false
+    interactive: false

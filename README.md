@@ -146,6 +146,49 @@ The application includes comprehensive error handling for:
 
 ## Development
 
+### Azure Deployment with azd
+
+This application can be deployed to Azure using the Azure Developer CLI (azd):
+
+1. Install the Azure Developer CLI:
+```bash
+# Windows
+winget install microsoft.azd
+
+# macOS
+brew tap azure/azd && brew install azd
+
+# Linux (via curl)
+curl -fsSL https://aka.ms/install-azd.sh | bash
+```
+
+2. Initialize and deploy:
+```bash
+# Log in to Azure
+azd auth login
+
+# Initialize the environment (first time only)
+azd init
+
+# Set your environment variables (optional, uses existing Kusto cluster)
+azd env set KUSTO_CLUSTER "https://your-cluster.kusto.windows.net"
+azd env set KUSTO_DATABASE "SubscriptionDB"
+azd env set LOGIC_APP_URL "https://your-logic-app-url.com/triggers/manual/paths/invoke"
+azd env set DEMO_MODE "false"
+
+# Deploy to Azure
+azd up
+```
+
+The deployment will create:
+- Azure Container Registry for the application image
+- Azure Container Apps Environment
+- Container App running the Stratos application
+- Log Analytics workspace for monitoring
+- Managed Identity for secure access
+
+**Note**: This deployment does not create a Kusto cluster or Logic App. You need to provide existing resource URLs in the environment variables.
+
 ### Running Tests
 
 ```bash
