@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Azure Subscription Email Notifier</h1>
+        <p class="lead">Send emails to account teams based on Azure subscription IDs</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Step 1: Input Subscription IDs</h5>
+            </div>
+            <div class="card-body">
+                <form id="subscription-form">
+                    <div class="mb-3">
+                        <label class="form-label">Option 1: Upload CSV File</label>
+                        <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv">
+                        <div class="form-text">CSV should have subscription IDs in the first column</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Option 2: Enter Subscription IDs (comma-separated)</label>
+                        <textarea class="form-control" id="subscription_ids" name="subscription_ids" rows="3" 
+                                  placeholder="e.g., 12345678-1234-1234-1234-123456789012, 87654321-4321-4321-4321-210987654321"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <span class="spinner-border spinner-border-sm d-none" id="fetch-spinner"></span>
+                        Fetch Account Team Emails
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Step 2: Review Account Teams</h5>
+            </div>
+            <div class="card-body">
+                <div id="account-teams-result" class="d-none">
+                    <div id="account-teams-list"></div>
+                    <button type="button" class="btn btn-success mt-3" id="compose-email-btn">
+                        Compose Email
+                    </button>
+                </div>
+                <div id="no-results" class="text-muted">
+                    <p>Enter subscription IDs above to fetch account team information</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Email Composition Modal -->
+<div class="modal fade" id="emailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Compose Email</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="email-form">
+                    <div class="mb-3">
+                        <label for="from_email" class="form-label">From Email</label>
+                        <input type="email" class="form-control" id="from_email" name="from_email" 
+                               placeholder="your-email@company.com" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email_subject" class="form-label">Subject</label>
+                        <input type="text" class="form-control" id="email_subject" name="email_subject" 
+                               value="Azure Subscription Notification" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email_content" class="form-label">Email Content</label>
+                        <textarea class="form-control" id="email_content" name="email_content" rows="8" required>Dear Account Team,
+
+I hope this email finds you well. I'm reaching out regarding the Azure subscription(s) under your management.
+
+[Please add your specific message here]
+
+Subscription Details:
+{subscription_details}
+
+Please let me know if you have any questions or need further information.
+
+Best regards,
+[Your Name]</textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Recipients Preview</label>
+                        <div id="recipients-preview" class="border p-2 bg-light rounded">
+                            <!-- Recipients will be populated here -->
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="send-email-btn">
+                    <span class="spinner-border spinner-border-sm d-none" id="send-spinner"></span>
+                    Send Email
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Messages -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div id="status-messages"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentAccountTeams = {};
+let currentRecipients = [];
+
+document.getElementById('subscription-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const spinner = document.getElementById('fetch-spinner');
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    
+    spinner.classList.remove('d-none');
+    submitBtn.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        
+        const csvFile = document.getElementById('csv_file').files[0];
+        if (csvFile) {
+            formData.append('csv_file', csvFile);
+        } else {
+            const manualIds = document.getElementById('subscription_ids').value;
+            formData.append('subscription_ids', manualIds);
+        }
+        
+        const response = await fetch('/fetch_emails', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            showMessage('Error: ' + result.error, 'danger');
+        } else {
+            currentAccountTeams = result.subscription_emails;
+            displayAccountTeams(result.subscription_emails);
+            showMessage('Successfully fetched account team information for ' + result.total_subscriptions + ' subscription(s)', 'success');
+        }
+        
+    } catch (error) {
+        showMessage('Error: ' + error.message, 'danger');
+    } finally {
+        spinner.classList.add('d-none');
+        submitBtn.disabled = false;
+    }
+});
+
+function displayAccountTeams(accountTeams) {
+    const resultDiv = document.getElementById('account-teams-result');
+    const listDiv = document.getElementById('account-teams-list');
+    const noResults = document.getElementById('no-results');
+    
+    let html = '<h6>Account Teams Found:</h6>';
+    currentRecipients = [];
+    
+    for (const [subscriptionId, teams] of Object.entries(accountTeams)) {
+        html += `<div class="mb-2">
+            <strong>Subscription:</strong> ${subscriptionId}<br>
+            <strong>Account Teams:</strong><ul>`;
+        
+        teams.forEach(team => {
+            html += `<li>${team.email} ${team.name ? '(' + team.name + ')' : ''}</li>`;
+            currentRecipients.push(team.email);
+        });
+        
+        html += '</ul></div>';
+    }
+    
+    listDiv.innerHTML = html;
+    resultDiv.classList.remove('d-none');
+    noResults.classList.add('d-none');
+}
+
+document.getElementById('compose-email-btn').addEventListener('click', function() {
+    // Update recipients preview
+    const recipientsPreview = document.getElementById('recipients-preview');
+    recipientsPreview.innerHTML = currentRecipients.map(email => 
+        `<span class="badge bg-secondary me-1">${email}</span>`
+    ).join('');
+    
+    // Update email content with subscription details
+    let subscriptionDetails = '';
+    for (const [subscriptionId, teams] of Object.entries(currentAccountTeams)) {
+        subscriptionDetails += `- ${subscriptionId}\n`;
+    }
+    
+    const emailContent = document.getElementById('email_content');
+    emailContent.value = emailContent.value.replace('{subscription_details}', subscriptionDetails);
+    
+    const modal = new bootstrap.Modal(document.getElementById('emailModal'));
+    modal.show();
+});
+
+document.getElementById('send-email-btn').addEventListener('click', async function() {
+    const spinner = document.getElementById('send-spinner');
+    const sendBtn = this;
+    
+    spinner.classList.remove('d-none');
+    sendBtn.disabled = true;
+    
+    try {
+        const emailData = {
+            recipients: currentRecipients,
+            subject: document.getElementById('email_subject').value,
+            email_content: document.getElementById('email_content').value,
+            from_email: document.getElementById('from_email').value
+        };
+        
+        const response = await fetch('/send_email', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(emailData)
+        });
+        
+        const result = await response.json();
+        
+        if (result.error) {
+            showMessage('Error: ' + result.error, 'danger');
+        } else {
+            showMessage('Email sent successfully to ' + currentRecipients.length + ' recipient(s)', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('emailModal')).hide();
+        }
+        
+    } catch (error) {
+        showMessage('Error: ' + error.message, 'danger');
+    } finally {
+        spinner.classList.add('d-none');
+        sendBtn.disabled = false;
+    }
+});
+
+function showMessage(message, type) {
+    const statusDiv = document.getElementById('status-messages');
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    statusDiv.appendChild(alertDiv);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}
