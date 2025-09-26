@@ -18,7 +18,24 @@ Stratos is a web application that enables sending emails to account teams of cus
 - Azure Logic Apps workflow configured for email sending
 - Default Azure credentials configured (Azure CLI, managed identity, or service principal)
 
-## Installation
+## Quick Start - Deploy to Azure
+
+Deploy to Azure using Azure Developer CLI (azd):
+
+```bash
+# Prerequisites: Install azd from https://aka.ms/azd-install
+
+# Clone and navigate to the repository
+git clone https://github.com/ninallam/stratos.git
+cd stratos
+
+# Deploy to Azure (this will provision infrastructure and deploy the app)
+azd up
+```
+
+For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Local Development Installation
 
 1. Clone the repository:
 ```bash
