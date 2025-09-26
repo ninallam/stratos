@@ -73,3 +73,12 @@ coverage.xml
 
 # Pytest
 .pytest_cache/
+
+# Azure Developer CLI
+.azure/environments/
+.azure/*.env
+.azure/.env
+
+# Azure deployment files
+*.zip
+deployment/
