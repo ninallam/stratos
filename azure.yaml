@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Azure/azure-dev/main/schemas/v1.0/azure.yaml.json
+
+name: stratos
+metadata:
+  template: stratos@0.0.1-beta
+services:
+  web:
+    project: .
+    language: python
+    host: containerapp
+hooks:
+  postprovision:
+    shell: sh
+    run: |
+      echo "=== Post-provision hook ==="
+      echo "Configuring application settings..."
+      # Set environment variables for the container app
+      if [ -n "$KUSTO_CLUSTER" ] && [ -n "$KUSTO_DATABASE" ] && [ -n "$LOGIC_APP_URL" ]; then
+        echo "Setting application configuration..."
+        az containerapp update \
+          --name $SERVICE_WEB_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --set-env-vars \
+            KUSTO_CLUSTER="$KUSTO_CLUSTER" \
+            KUSTO_DATABASE="$KUSTO_DATABASE" \
+            LOGIC_APP_URL="$LOGIC_APP_URL" \
+            DEMO_MODE=false \
+            FLASK_ENV=production
+        echo "Application configuration updated successfully!"
+      else
+        echo "Warning: Some Azure service endpoints not configured. App will run in demo mode."
+        az containerapp update \
+          --name $SERVICE_WEB_NAME \
+          --resource-group $AZURE_RESOURCE_GROUP \
+          --set-env-vars \
+            DEMO_MODE=true \
+            FLASK_ENV=production
+      fi
