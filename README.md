@@ -186,6 +186,37 @@ stratos/
 
 This project is licensed under the MIT License. See the LICENSE file for details.
 
+## Deployment
+
+### Azure Deployment
+
+This application can be deployed to Azure using Azure Developer CLI (azd). See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed instructions.
+
+**Quick Azure Deployment:**
+
+```bash
+# Install Azure Developer CLI
+# Clone the repository and navigate to the directory
+
+# Initialize and deploy
+azd init
+azd env set AZURE_ENV_NAME "stratos-dev"
+azd env set AZURE_LOCATION "eastus"
+azd env set KUSTO_CLUSTER_NAME "your-existing-kusto-cluster"
+azd up
+```
+
+The deployment will create:
+- Azure App Service to host the Flask application
+- Azure Logic App with email workflow
+- Application Insights for monitoring
+- Key Vault for secure configuration
+- All necessary Azure resources
+
+### Local Development
+
+For local development, follow the installation instructions above and use the `.env` file for configuration.
+
 ## Support
 
 For issues and questions, please create an issue in the GitHub repository.
