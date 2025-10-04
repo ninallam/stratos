@@ -68,9 +68,10 @@
             <div class="modal-body">
                 <form id="email-form">
                     <div class="mb-3">
-                        <label for="from_email" class="form-label">From Email</label>
+                        <label for="from_email" class="form-label">Your Email Address (Microsoft Entra Account)</label>
                         <input type="email" class="form-control" id="from_email" name="from_email" 
                                placeholder="your-email@company.com" required>
+                        <div class="form-text">This must be your Microsoft Entra account email. Emails will be sent from your account.</div>
                     </div>
                     
                     <div class="mb-3">
@@ -97,7 +98,7 @@ Best regards,
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Recipients Preview</label>
+                        <label class="form-label">Email Distribution (One Email Per Subscription)</label>
                         <div id="recipients-preview" class="border p-2 bg-light rounded">
                             <!-- Recipients will be populated here -->
                         </div>
@@ -198,20 +199,24 @@ function displayAccountTeams(accountTeams) {
 }
 
 document.getElementById('compose-email-btn').addEventListener('click', function() {
-    // Update recipients preview
+    // Update recipients preview - show that we'll send one email per subscription
     const recipientsPreview = document.getElementById('recipients-preview');
-    recipientsPreview.innerHTML = currentRecipients.map(email => 
-        `<span class="badge bg-secondary me-1">${email}</span>`
-    ).join('');
+    let previewHtml = '<div class="mb-2"><strong>Email Distribution:</strong></div>';
     
-    // Update email content with subscription details
-    let subscriptionDetails = '';
     for (const [subscriptionId, teams] of Object.entries(currentAccountTeams)) {
-        subscriptionDetails += `- ${subscriptionId}\n`;
+        previewHtml += `<div class="mb-2">
+            <strong>${subscriptionId}:</strong><br>
+            ${teams.map(team => `<span class="badge bg-secondary me-1">${team.email}</span>`).join('')}
+        </div>`;
     }
     
+    recipientsPreview.innerHTML = previewHtml;
+    
+    // Note: Keep {subscription_details} placeholder - it will be replaced per email
     const emailContent = document.getElementById('email_content');
-    emailContent.value = emailContent.value.replace('{subscription_details}', subscriptionDetails);
+    if (!emailContent.value.includes('{subscription_details}')) {
+        emailContent.value = emailContent.value + '\n\nSubscription Details:\n{subscription_details}';
+    }
     
     const modal = new bootstrap.Modal(document.getElementById('emailModal'));
     modal.show();
@@ -226,7 +231,7 @@ document.getElementById('send-email-btn').addEventListener('click', async functi
     
     try {
         const emailData = {
-            recipients: currentRecipients,
+            subscription_emails: currentAccountTeams,
             subject: document.getElementById('email_subject').value,
             email_content: document.getElementById('email_content').value,
             from_email: document.getElementById('from_email').value
@@ -244,8 +249,13 @@ document.getElementById('send-email-btn').addEventListener('click', async functi
         
         if (result.error) {
             showMessage('Error: ' + result.error, 'danger');
+            if (result.errors) {
+                result.errors.forEach(error => {
+                    showMessage('Detail: ' + error, 'warning');
+                });
+            }
         } else {
-            showMessage('Email sent successfully to ' + currentRecipients.length + ' recipient(s)', 'success');
+            showMessage(result.message, 'success');
             bootstrap.Modal.getInstance(document.getElementById('emailModal')).hide();
         }
         

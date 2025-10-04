@@ -7,7 +7,6 @@ param appServicePlanName string
 param keyVaultName string
 param managedIdentity bool = !empty(keyVaultName)
 
-param logicAppTriggerUrl string = ''
 param kustoClusterName string = ''
 param kustoDatabaseName string = 'SubscriptionDB'
 param demoMode bool = false
@@ -75,7 +74,6 @@ resource appService 'Microsoft.Web/sites@2022-03-01' = {
         SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
         FLASK_ENV: 'production'
         SECRET_KEY: managedIdentity && !empty(keyVaultName) ? '@Microsoft.KeyVault(SecretUri=${keyVault.properties.vaultUri}secrets/SECRET-KEY)' : uniqueString(resourceGroup().id)
-        LOGIC_APP_URL: logicAppTriggerUrl
         KUSTO_CLUSTER: !empty(kustoClusterName) ? 'https://${kustoClusterName}.kusto.windows.net' : ''
         KUSTO_DATABASE: kustoDatabaseName
         DEMO_MODE: string(demoMode)

@@ -167,12 +167,52 @@ The deployment creates the following billable resources:
 
 Consider using smaller tiers for development/testing environments.
 
+### 5. Configure Kusto Permissions (After Deployment)
+
+After successful deployment, you need to grant the managed identity access to your Kusto cluster:
+
+**Option 1 - Using PowerShell Script:**
+```powershell
+# Run the provided script
+.\scripts\configure-kusto-permissions.ps1 `
+    -KustoClusterName "your-kusto-cluster" `
+    -KustoDatabase "SubscriptionDB" `
+    -ResourceGroupName "rg-stratos-dev" `
+    -AppServiceName "your-app-service-name"
+```
+
+**Option 2 - Manual Configuration:**
+1. Get your app's managed identity principal ID from Azure Portal
+2. Go to your Kusto cluster web UI: `https://your-cluster.kusto.windows.net`
+3. Run these KQL commands:
+```kql
+.add database SubscriptionDB users ('aadapp=<PRINCIPAL_ID>') 'Stratos App Managed Identity'
+.add database SubscriptionDB viewers ('aadapp=<PRINCIPAL_ID>') 'Stratos App Managed Identity'
+```
+
+**Option 3 - Using Azure CLI:**
+```bash
+# Install Kusto extension if not already installed
+az extension add --name kusto
+
+# Create database principal assignment
+az kusto database-principal-assignment create \
+    --cluster-name your-kusto-cluster \
+    --database-name SubscriptionDB \
+    --resource-group rg-stratos-dev \
+    --principal-assignment-name stratos-app-permissions \
+    --principal-id <PRINCIPAL_ID> \
+    --principal-type App \
+    --role Viewer
+```
+
 ## Security
 
-- Secrets are stored in Azure Key Vault
-- App Service uses managed identity for authentication
-- HTTPS is enforced for all connections
-- Application Insights connection string is securely configured
+- **Managed Identity Authentication**: App Service uses managed identity to authenticate to Kusto (no credentials stored)
+- **Secrets Management**: Application secrets are stored in Azure Key Vault
+- **HTTPS Enforcement**: All connections use HTTPS
+- **Secure Configuration**: Application Insights and other Azure services use secure connection strings
+- **Role-Based Access**: Kusto permissions are granted using Azure RBAC principles
 
 ## Support
 

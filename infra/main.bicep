@@ -21,7 +21,6 @@ param principalId string = ''
 // Optional parameters to override the default Azure resource names
 param appServicePlanName string = ''
 param appServiceName string = ''
-param logicAppName string = ''
 param applicationInsightsName string = ''
 param keyVaultName string = ''
 param resourceGroupName string = ''
@@ -51,23 +50,13 @@ module api './resources/api.bicep' = {
     appServicePlanName: !empty(appServicePlanName) ? appServicePlanName : '${abbrs.webServerFarms}${resourceToken}'
     keyVaultName: keyVault.outputs.name
     applicationInsightsName: monitoring.outputs.applicationInsightsName
-    logicAppTriggerUrl: logicApp.outputs.triggerUrl
     kustoClusterName: kustoClusterName
     kustoDatabaseName: kustoDatabaseName
     demoMode: demoMode
   }
 }
 
-// Logic App for sending emails
-module logicApp './resources/logic-app.bicep' = {
-  name: 'logic-app'
-  scope: rg
-  params: {
-    name: !empty(logicAppName) ? logicAppName : '${abbrs.logicWorkflows}${resourceToken}'
-    location: location
-    tags: tags
-  }
-}
+// Logic App removed - using Microsoft Graph API directly
 
 // The application database
 module keyVault './resources/keyvault.bicep' = {
@@ -101,6 +90,5 @@ output AZURE_RESOURCE_GROUP string = rg.name
 // App outputs
 output API_BASE_URL string = api.outputs.SERVICE_API_URI
 output APPLICATIONINSIGHTS_CONNECTION_STRING string = monitoring.outputs.applicationInsightsConnectionString
-output LOGIC_APP_URL string = logicApp.outputs.triggerUrl
 output KUSTO_CLUSTER string = !empty(kustoClusterName) ? 'https://${kustoClusterName}.kusto.windows.net' : ''
 output KUSTO_DATABASE string = kustoDatabaseName
